@@ -1,7 +1,7 @@
 const API_KEY = "73eb6fcfb83f1d3647cf4aa1a142e4fe";
 const IMG_PATH = "https://image.tmdb.org/t/p/w1280";
 const BASE_API_URL = "https://api.themoviedb.org/3/discover/movie?";
-const PAGE_LIMIT = 4; // Number of pages to fetch
+const PAGE_LIMIT = 3; // Number of pages to fetch
 const CAST_API_URL = "https://api.themoviedb.org/3/movie"; // Base URL for fetching cast
 
 const main = document.getElementById("main");
@@ -133,6 +133,60 @@ function loadCachedMovies() {
 }
 
 window.addEventListener('load', loadCachedMovies);
+
+let prefetching = false;
+
+function displayNextMovie() {
+    if (shuffledMovies.length === 0) return;
+
+    if (currentIndex >= shuffledMovies.length) {
+        shuffleMovies(); // Shuffle again if we reach the end
+    }
+
+    const movie = shuffledMovies[currentIndex];
+    const { id, title, poster_path, vote_average, overview } = movie;
+
+    main.innerHTML = `
+        <div class="movie">
+            <img data-src="${IMG_PATH + poster_path}" alt="${title}" class="lazy-image">
+            <div class="movie-info">
+                <h3>${title}</h3>
+                <span>${vote_average}</span>
+            </div>
+            <div class="overview">
+                <h3>Overview</h3>
+                ${overview}
+            </div>
+            <div id="cast-info">
+                <h3>Cast</h3>
+                <p>Loading cast...</p>
+            </div>
+        </div>
+    `;
+
+    // Lazy load the images
+    lazyLoadImages();
+
+    fetchMovieCast(id); // Fetch and display the cast for this movie
+    currentIndex++;
+}
+
+function lazyLoadImages() {
+    const lazyImages = document.querySelectorAll('.lazy-image');
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.getAttribute('data-src');
+                img.classList.remove('lazy-image');
+                observer.unobserve(img);
+            }
+        });
+    });
+
+    lazyImages.forEach(image => observer.observe(image));
+}
+
 
 // Event listener for the "Next Movie" button
 nextMovieButton.addEventListener("click", displayNextMovie);
