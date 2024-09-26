@@ -1,7 +1,8 @@
 const API_KEY = "73eb6fcfb83f1d3647cf4aa1a142e4fe";
 const IMG_PATH = "https://image.tmdb.org/t/p/w1280";
 const BASE_API_URL = "https://api.themoviedb.org/3/discover/movie?";
-const PAGE_LIMIT = 100; // Number of pages to fetch
+const PAGE_LIMIT = 4; // Number of pages to fetch
+const CAST_API_URL = "https://api.themoviedb.org/3/movie"; // Base URL for fetching cast
 
 const main = document.getElementById("main");
 const nextMovieButton = document.getElementById("next-movie");
@@ -15,7 +16,7 @@ async function fetchMovies() {
     try {
         let allMovies = [];
         for (let page = 1; page <= PAGE_LIMIT; page++) {
-            const url = `${BASE_API_URL}api_key=${API_KEY}&language=en-US&sort_by=vote_average.asc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31&vote_average.lte=5&vote_count.gte=10&page=${page}`;
+            const url = `${BASE_API_URL}api_key=${API_KEY}&language=en-US&sort_by=vote_average.asc&primary_release_date.gte=1980-01-01&primary_release_date.lte=1989-12-31&vote_average.lte=5&vote_count.gte=10&include_adult=false&page=${page}`;
             const res = await fetch(url);
             
             if (!res.ok) {
@@ -48,7 +49,7 @@ function shuffleMovies() {
     currentIndex = 0; // Reset index
 }
 
-// Display the next movie in the shuffled list
+// Fetch and display the next movie in the shuffled list
 function displayNextMovie() {
     if (shuffledMovies.length === 0) return;
 
@@ -57,7 +58,7 @@ function displayNextMovie() {
     }
 
     const movie = shuffledMovies[currentIndex];
-    const { title, poster_path, vote_average, overview } = movie;
+    const { id, title, poster_path, vote_average, overview } = movie;
 
     main.innerHTML = `
         <div class="movie">
@@ -70,11 +71,68 @@ function displayNextMovie() {
                 <h3>Overview</h3>
                 ${overview}
             </div>
+            <div id="cast-info">
+                <h3>Cast</h3>
+                <p>Loading cast...</p>
+            </div>
         </div>
     `;
 
+    fetchMovieCast(id); // Fetch and display the cast for this movie
+
     currentIndex++;
 }
+
+// Fetch the cast for a specific movie by its ID
+async function fetchMovieCast(movieId) {
+    try {
+        const castUrl = `${CAST_API_URL}/${movieId}/credits?api_key=${API_KEY}&language=en-US`;
+        const res = await fetch(castUrl);
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        displayCast(data.cast);
+    } catch (error) {
+        console.error('Error fetching cast:', error);
+        document.getElementById('cast-info').innerHTML = "<p>Failed to load cast. Please try again later.</p>";
+    }
+}
+
+// Display the cast in the movie element
+function displayCast(cast) {
+    const castInfo = document.getElementById('cast-info');
+    castInfo.innerHTML = "<h3>Cast</h3>";
+
+    if (cast.length > 0) {
+        cast.slice(0, 5).forEach((actor) => { // Display the top 5 cast members
+            const castElement = document.createElement("p");
+            castElement.textContent = `${actor.name} as ${actor.character}`;
+            castInfo.appendChild(castElement);
+        });
+    } else {
+        castInfo.innerHTML = "<p>No cast information available</p>";
+    }
+}
+
+function cacheMovies() {
+    localStorage.setItem('movies', JSON.stringify(movies));
+}
+
+function loadCachedMovies() {
+    const cachedMovies = localStorage.getItem('movies');
+    if (cachedMovies) {
+        movies = JSON.parse(cachedMovies);
+        shuffleMovies();
+        displayNextMovie();
+    } else {
+        fetchMovies(); // Fetch if no cache exists
+    }
+}
+
+window.addEventListener('load', loadCachedMovies);
 
 // Event listener for the "Next Movie" button
 nextMovieButton.addEventListener("click", displayNextMovie);
