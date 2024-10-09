@@ -11,6 +11,33 @@ let movies = []; // Array to store the list of movies
 let shuffledMovies = []; // Array to store shuffled list of movies
 let currentIndex = 0; // Index to keep track of the current movie
 
+document.addEventListener("DOMContentLoaded", function() {
+    const canvas = document.getElementById("canvas");
+    const logoScreen = document.getElementById('logo-screen');
+    const riveAnimation = new rive.Rive({
+        src: "LOGO.riv",
+        canvas: canvas,
+        autoplay: true,
+        onError: (error) => {
+            console.error("Error loading Rive animation:", error);
+        }
+    });
+
+    // Simulate loading time
+    setTimeout(() => {
+        // Trigger the move-to-top-left animation by adding the class
+        logoScreen.classList.add('move-to-top-left');
+
+        // After the transition completes (1 second), you can show the main content
+        setTimeout(() => {
+            document.getElementById("main").style.display = 'block';  // Show main content
+            document.getElementById("main").classList.add('fade-in'); // Optional: Add fade-in effect
+        }, 500);  // 1 second for the move transition
+    }, 3000);  // Adjust the initial loading time (4 seconds in this case)
+});
+
+
+
 // Fetch movies from multiple pages
 async function fetchMovies() {
     try {
@@ -137,39 +164,57 @@ window.addEventListener('load', loadCachedMovies);
 let prefetching = false;
 
 function displayNextMovie() {
-    if (shuffledMovies.length === 0) return;
+    const movieContainer = document.getElementById("movie-container");
 
-    if (currentIndex >= shuffledMovies.length) {
-        shuffleMovies(); // Shuffle again if we reach the end
-    }
+    // Add the fade-out class for the transition
+    movieContainer.classList.add("fade-out");
 
-    const movie = shuffledMovies[currentIndex];
-    const { id, title, poster_path, vote_average, overview } = movie;
+    // Wait for the next frame to ensure the fade-out applies before changing the content
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            if (shuffledMovies.length === 0) return;
 
-    main.innerHTML = `
-        <div class="movie">
-            <img data-src="${IMG_PATH + poster_path}" alt="${title}" class="lazy-image">
-            <div class="movie-info">
-                <h3>${title}</h3>
-                <span>${vote_average}</span>
-            </div>
-            <div class="overview">
-                <h3>Overview</h3>
-                ${overview}
-            </div>
-            <div id="cast-info">
-                <h3>Cast</h3>
-                <p>Loading cast...</p>
-            </div>
-        </div>
-    `;
+            if (currentIndex >= shuffledMovies.length) {
+                shuffleMovies(); // Shuffle again if we reach the end
+            }
 
-    // Lazy load the images
-    lazyLoadImages();
+            const movie = shuffledMovies[currentIndex];
+            const { id, title, poster_path, vote_average, overview } = movie;
 
-    fetchMovieCast(id); // Fetch and display the cast for this movie
-    currentIndex++;
+            // Update movie content
+            movieContainer.innerHTML = `
+                <div class="movie">
+                    <img data-src="${IMG_PATH + poster_path}" alt="${title}" class="lazy-image">
+                    <div class="movie-info">
+                        <h3>${title}</h3>
+                        <span>${vote_average}</span>
+                    </div>
+                    <div class="overview">
+                        <h3>Overview</h3>
+                        ${overview}
+                    </div>
+                    <div id="cast-info">
+                        <h3>Cast</h3>
+                        <p>Loading cast...</p>
+                    </div>
+                </div>
+            `;
+
+            // Lazy load the images
+            lazyLoadImages();
+
+            // Fetch and display the cast for this movie
+            fetchMovieCast(id);
+
+            // Trigger fade-in after the content is updated
+            movieContainer.classList.remove("fade-out");
+
+            currentIndex++;
+        }, 500); // Delay matches the CSS transition time (500ms)
+    });
 }
+
+
 
 function lazyLoadImages() {
     const lazyImages = document.querySelectorAll('.lazy-image');
@@ -193,3 +238,5 @@ nextMovieButton.addEventListener("click", displayNextMovie);
 
 // Fetch the movies on page load
 fetchMovies();
+
+

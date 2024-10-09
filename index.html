@@ -9,8 +9,8 @@
 <body>
     <header>
         <nav class="navbar">
-            <div class="logo">
-                <h1>Bad 80s Movies</h1>
+            <div class="logo" id="logo-container">
+                
             </div>
             <button id="next-movie">Next Movie</button>
             <form id="form" class="search-form">
@@ -19,9 +19,22 @@
             </form>
         </nav>
     </header>
+    <div id="logo-screen">
+        <canvas id="canvas" width="800" height="800"></canvas>
+    </div>
 
-    <main id="main"></main>
+    <main id="main">
+        <div id="movie-container" class="fade-out"></div>
+    </main>
     
     <script src="main.js"></script>
+    <script src="https://unpkg.com/@rive-app/canvas@2.20.0"></script>
+    <script>
+        new rive.Rive({
+            src: "LOGO.riv",
+            canvas: document.getElementById("canvas"),
+            autoplay: true
+        });
+    </script>
 </body>
 </html>
